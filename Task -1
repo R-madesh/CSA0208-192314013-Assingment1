@@ -1,0 +1,96 @@
+ 
+#include <stdio.h>
+#include <stdint.h>
+#include <inttypes.h>
+
+#define METER_MAX 65535U
+#define SLAB1_UNITS 100U
+#define SLAB2_UNITS 200U
+#define RATE1_PAISE 0LL
+#define RATE2_PAISE 225LL
+#define RATE3_PAISE 450LL
+#define FIXED_CHARGE_PAISE 5000LL
+
+typedef uint16_t meter_t;
+typedef int64_t money_t;
+
+uint32_t calculate_units(meter_t previous, meter_t current)
+{
+    return (uint16_t)(current - previous);
+}
+
+money_t calculate_energy_charge(uint32_t units)
+{
+    money_t charge = 0;
+
+    if (units > SLAB2_UNITS)
+        charge += (money_t)(units - SLAB2_UNITS)
+                  * RATE3_PAISE;
+
+    if (units > SLAB1_UNITS)
+    {
+        uint32_t slab2 = units < SLAB2_UNITS
+                       ? units - SLAB1_UNITS
+                       : SLAB2_UNITS - SLAB1_UNITS;
+
+        charge += (money_t)slab2 * RATE2_PAISE;
+    }
+
+    uint32_t slab1 = units < SLAB1_UNITS
+                   ? units : SLAB1_UNITS;
+
+    charge += (money_t)slab1 * RATE1_PAISE;
+
+    return charge;
+}
+
+void print_money(money_t paise)
+{
+    printf("Rs. %" PRId64 ".%02" PRId64 "\n",
+           paise / 100, paise % 100);
+}
+
+int main(void)
+{
+    meter_t previous, current;
+    uint32_t household;
+    uint32_t units;
+    money_t energy_charge, total_bill;
+ 
+    if (scanf("%" SCNu32, &household) != 1) {
+        printf("Invalid household number.\n");
+        return 1;
+    }
+ 
+    if (scanf("%" SCNu16, &previous) != 1) {
+        printf("Invalid previous reading.\n");
+        return 1;
+    }
+ 
+    if (scanf("%" SCNu16, &current) != 1) {
+        printf("Invalid current reading.\n");
+        return 1;
+    }
+
+    units = calculate_units(previous, current);
+    energy_charge = calculate_energy_charge(units);
+    total_bill = energy_charge + FIXED_CHARGE_PAISE;
+
+    printf("\n--- Electricity Bill ---\n");
+    printf("Household number: %" PRIu32 "\n", household);
+    printf("Previous reading: %u\n", (unsigned)previous);
+    printf("Current reading: %u\n", (unsigned)current);
+    printf("Units consumed: %" PRIu32 "\n", units);
+
+    printf("Energy charge: ");
+    print_money(energy_charge);
+
+    printf("Fixed charge: ");
+    print_money(FIXED_CHARGE_PAISE);
+
+    printf("Total bill: ");
+    print_money(total_bill);
+
+    return 0;
+}
+
